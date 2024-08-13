@@ -1,100 +1,110 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const BookingManagement = () => {
   const [bookings, setBookings] = useState([]);
-
+  const [loading, setLoading] = useState(true); //wait for showing data
+  const [error, setError] = useState(null);
+ 
+  //data fetched to display
   useEffect(() => {
-    // Fetch bookings from the database
     const fetchBookings = async () => {
       try {
-        const response = await fetch('https://travel-project-auth-e9607-default-rtdb.firebaseio.com/bookings.json');
+        const response = await fetch('https://travel-project-auth-e9607-default-rtdb.firebaseio.com/reservations.json');
         const data = await response.json();
-        const bookingsArray = Object.keys(data).map(key => ({
-          id: key,
-          ...data[key]
-        }));
-        setBookings(bookingsArray);
+
+        if (data) {
+          const allBookings = [];
+          //below this is done bcz of structure of database here for each user with unique id he can have different booking id for different hotels or place 
+          //so we do like this in this way at last we get array with bid and uid 
+          for (const userId in data) {
+            for (const bookingId in data[userId]) {
+              allBookings.push({
+                userId,
+                bookingId,
+                ...data[userId][bookingId],
+              });
+            }
+          }
+          setBookings(allBookings);
+        }
       } catch (error) {
-        console.error('Failed to fetch bookings:', error);
+        alert('Failed to fetch bookings:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchBookings();
   }, []);
 
-  const handleApproveBooking = async (bookingId) => {
+  const handleApprove = async (booking) => {
     try {
-      const updatedBooking = { ...bookings.find(booking => booking.id === bookingId), status: 'completed' };
-      const response = await fetch(`https://travel-project-auth-e9607-default-rtdb.firebaseio.com/bookings/${bookingId}.json`, {
+      await fetch(`https://travel-project-auth-e9607-default-rtdb.firebaseio.com/reservations/${booking.userId}/${booking.bookingId}.json`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedBooking),
+        body: JSON.stringify({ status: 'completed' }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to approve booking');
-      }
-
-      const updatedBookings = bookings.map(booking =>
-        booking.id === bookingId ? updatedBooking : booking
-      );
-      setBookings(updatedBookings);
+     //update instant on screen 
+      setBookings(bookings.map(b => b.bookingId === booking.bookingId ? { ...b, status: 'completed' } : b));
     } catch (error) {
-      console.error('Failed to approve booking:', error);
+      alert('Failed to approve booking:', error);
     }
   };
 
-  const handleDeleteBooking = async (bookingId) => {
+  const handleReject = async (booking) => {
     try {
-      const response = await fetch(`https://travel-project-auth-e9607-default-rtdb.firebaseio.com/bookings/${bookingId}.json`, {
-        method: 'DELETE',
+      await fetch(`https://travel-project-auth-e9607-default-rtdb.firebaseio.com/reservations/${booking.userId}/${booking.bookingId}.json`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'rejected' }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete booking');
-      }
-
-      const updatedBookings = bookings.filter(booking => booking.id !== bookingId);
-      setBookings(updatedBookings);
+      setBookings(bookings.map(b => b.bookingId === booking.bookingId ? { ...b, status: 'rejected' } : b));
     } catch (error) {
-      console.error('Failed to delete booking:', error);
+      alert('Failed to reject booking:', error);
     }
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
-    <div className="container mx-auto p-6">
-      <h2 className="text-3xl font-bold mb-6 text-center">Booking Management</h2>
-      {bookings.length > 0 ? (
-        <ul className="space-y-4">
-          {bookings.map(booking => (
-            <li key={booking.id} className="p-6 bg-white rounded-lg shadow-md">
-              <h3 className="text-2xl font-semibold mb-2">{booking.placeName}</h3>
-              <p className="text-gray-700 mb-2">Booked by: <span className="font-medium">{booking.userName}</span></p>
-              <p className="text-gray-700 mb-2">Booking dates: <span className="font-medium">{booking.startDate}</span> to <span className="font-medium">{booking.endDate}</span></p>
-              <p className="text-gray-700 mb-2">Status: <span className={`font-medium ${booking.status === 'completed' ? 'text-green-600' : 'text-yellow-600'}`}>{booking.status}</span></p>
-              <div className="flex space-x-4">
-                {booking.status !== 'completed' && (
-                  <button
-                    onClick={() => handleApproveBooking(booking.id)}
-                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-200"
-                  >
-                    Approve
-                  </button>
-                )}
-                <button
-                  onClick={() => handleDeleteBooking(booking.id)}
-                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-200"
-                >
-                  Delete
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+    <div className="container mx-auto py-8 px-4">
+      {bookings.length === 0 ? (
+        <p>No pending bookings.</p>
       ) : (
-        <p className="text-center text-gray-700">No bookings available</p>
+        bookings.map((booking, index) => (
+          <div key={index} className="bg-white shadow-md rounded-lg p-6 mb-4">
+            <h3 className="text-xl font-bold mb-2">{booking.placeName}</h3>
+            <p className="mb-2">Check-in Date: {booking.checkInDate}</p>
+            <p className="mb-2">Check-out Date: {booking.checkOutDate}</p>
+            <p className="mb-2">Total Price: ₹{booking.totalPrice}</p>
+            <p className="mb-2">Status: {booking.status}</p>
+            <p className="mb-2">Property name: {booking.propertyName}</p>
+            <button
+              onClick={() => handleApprove(booking)}
+              className="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 mt-4 mr-4"
+            >
+              Approve
+            </button>
+            <button
+              onClick={() => handleReject(booking)}
+              className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 mt-4"
+            >
+              Reject
+            </button>
+          </div>
+        ))
       )}
     </div>
   );

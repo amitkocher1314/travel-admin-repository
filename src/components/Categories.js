@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 
 const Categories = () => {
     const [categories, setCategories] = useState([]);
-    const [newCategory, setNewCategory] = useState('');
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [newCategoryImage, setNewCategoryImage] = useState('');
 
     useEffect(() => {
-        // Fetch categories from Firebase when the component mounts
         const fetchCategories = async () => {
             try {
                 const response = await fetch('https://travel-project-auth-e9607-default-rtdb.firebaseio.com/categories.json');
@@ -14,7 +14,7 @@ const Categories = () => {
                     setCategories(Object.values(data));
                 }
             } catch (error) {
-                console.error('Error fetching categories:', error);
+                alert('Error fetching categories:', error);
             }
         };
 
@@ -22,7 +22,15 @@ const Categories = () => {
     }, []);
 
     const handleAddCategory = async () => {
-        if (newCategory.trim() !== '') {
+        //checking input not empty and removing whitespace
+        if (newCategoryName.trim() !== '' && newCategoryImage.trim() !== '') {
+           //storing in variable in object format to save like this in database 
+            const newCategory = {
+                name: newCategoryName,
+                imageUrl: newCategoryImage
+            }
+           
+
             try {
                 const response = await fetch('https://travel-project-auth-e9607-default-rtdb.firebaseio.com/categories.json', {
                     method: 'POST',
@@ -36,26 +44,38 @@ const Categories = () => {
                     throw new Error('Failed to add category');
                 }
 
-                const data = await response.json();
                 setCategories([...categories, newCategory]);
-                setNewCategory('');
+                setNewCategoryName('');
+                setNewCategoryImage('');
             } catch (error) {
                 alert('Error adding category:', error);
             }
+        }
+        else{
+            alert("please add input correctly")
         }
     };
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
             <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-                <h2 className="text-2xl font-semibold mb-6 text-center text-blue-600">Manage Categories</h2>
-                <div className="flex space-x-3 mb-6">
+                <h2 className="text-2xl font-semibold mb-6 text-center text-blue-600">Add Categories</h2>
+                <div className="flex flex-col space-y-3 mb-6">
                     <input
                         type="text"
-                        value={newCategory}
-                        onChange={(e) => setNewCategory(e.target.value)}
-                        placeholder="Add new category"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="Category name"
                         className="p-3 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                    <input
+                        type="text"
+                        value={newCategoryImage}
+                        onChange={(e) => setNewCategoryImage(e.target.value)}
+                        placeholder="Category image URL"
+                        className="p-3 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        
+                        
                     />
                     <button
                         onClick={handleAddCategory}
@@ -67,7 +87,7 @@ const Categories = () => {
                 <ul className="space-y-3">
                     {categories.map((category, index) => (
                         <li key={index} className="p-3 border border-gray-300 rounded-lg bg-gray-50">
-                            {category}
+                            {category.name}
                         </li>
                     ))}
                 </ul>

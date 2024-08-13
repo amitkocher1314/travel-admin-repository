@@ -4,7 +4,7 @@ const UpdateAvailability = () => {
   const [listings, setListings] = useState([]);
 
   useEffect(() => {
-    // Fetch listings from the database
+    // Fetch listings from the database 
     const fetchListings = async () => {
       try {
         const response = await fetch('https://travel-project-auth-e9607-default-rtdb.firebaseio.com/listings.json');
@@ -15,13 +15,13 @@ const UpdateAvailability = () => {
         }));
         setListings(listingsArray);
       } catch (error) {
-        console.error('Failed to fetch listings:', error);
+        alert('Failed to fetch listings:', error);
       }
     };
 
     fetchListings();
   }, []);
-
+ // 2nd argument is true and false passed from onClick and first one is unique key we assign to each on fetched data 
   const handleUpdateAvailability = async (listingId, available) => {
     try {
       const response = await fetch(`https://travel-project-auth-e9607-default-rtdb.firebaseio.com/listings/${listingId}.json`, {
@@ -37,13 +37,13 @@ const UpdateAvailability = () => {
       if (!response.ok) {
         throw new Error('Failed to update listing');
       }
-
+    //to show instant change on screen
       const updatedListings = listings.map(listing =>
         listing.id === listingId ? { ...listing, available } : listing
       );
       setListings(updatedListings);
     } catch (error) {
-      console.error('Failed to update listing:', error);
+      alert('Failed to update listing:', error);
     }
   };
 
@@ -56,7 +56,8 @@ const UpdateAvailability = () => {
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h3 className="text-xl font-semibold">{listing.placeName}</h3>
-                <p className={`text-sm ${listing.available ? 'text-green-600' : 'text-red-600'}`}>
+                <p className={`text-sm ${listing.available ? 'text-green-600' : 'text-red-600'}`}> 
+                   {/* listing.available is stored in true and false format in database */}
                   {listing.available ? 'Available' : 'Currently Not Available'}
                 </p>
                 <p className="text-sm text-gray-700">Category: {listing.category}</p>

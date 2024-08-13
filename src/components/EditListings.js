@@ -1,28 +1,29 @@
 import React, { useState, useEffect } from 'react';
 
 const EditListings = () => {
-    const [listings, setListings] = useState([]);
-    const [editingListing, setEditingListing] = useState(null);
+    const [listings, setListings] = useState([]); //variable store data already stored in database
+    const [editingListing, setEditingListing] = useState(null);  //for conditional purpose i.e when click on edit only particular id data shown
 
     useEffect(() => {
-        // Fetch listings from the database
         const fetchListings = async () => {
             try {
                 const response = await fetch('https://travel-project-auth-e9607-default-rtdb.firebaseio.com/listings.json');
                 const data = await response.json();
+                //Object.keys to get all key of object in database and then with every data we add unique key we fetch this is done when want to edit and delete particular data 
                 const listingsArray = Object.keys(data).map(key => ({
                     id: key,
                     ...data[key]
                 }));
                 setListings(listingsArray);
             } catch (error) {
-                console.error('Failed to fetch listings:', error);
+                alert('Failed to fetch listings:', error);
             }
         };
 
         fetchListings();
     }, []);
-
+    
+   //now if editListing not null we see edit page 
     const handleEditClick = (listing) => {
         setEditingListing(listing);
     };
@@ -39,7 +40,7 @@ const EditListings = () => {
         e.preventDefault();
         try {
             const response = await fetch(`https://travel-project-auth-e9607-default-rtdb.firebaseio.com/listings/${editingListing.id}.json`, {
-                method: 'PATCH',
+                method: 'PATCH',   //we use patch instead of put when want to update part of source 
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -49,14 +50,14 @@ const EditListings = () => {
             if (!response.ok) {
                 throw new Error('Failed to update listing');
             }
-
+           //this is done to show update on screen although data is fetched but for fast change we do this
             const updatedListings = listings.map(listing =>
                 listing.id === editingListing.id ? editingListing : listing
             );
             setListings(updatedListings);
             setEditingListing(null);
         } catch (error) {
-            console.error('Failed to update listing:', error);
+           alert('Failed to update listing:', error);
         }
     };
 
@@ -73,13 +74,12 @@ const EditListings = () => {
             const updatedListings = listings.filter(listing => listing.id !== id);
             setListings(updatedListings);
         } catch (error) {
-            console.error('Failed to delete listing:', error);
+            alert('Failed to delete listing:', error);
         }
     };
 
     return (
         <div className="container mx-auto p-6">
-            <h2 className="text-3xl font-bold mb-6 text-center">Edit Listings and Categories</h2>
             {editingListing ? (
                 <form onSubmit={handleUpdateListing} className="bg-white p-6 rounded-lg shadow-md space-y-4">
                     <input
@@ -88,6 +88,14 @@ const EditListings = () => {
                         value={editingListing.placeName}
                         onChange={handleInputChange}
                         placeholder="Place name"
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                    />
+                    <input
+                        type="text"
+                        name="propertyName"
+                        value={editingListing.propertyName}
+                        onChange={handleInputChange}
+                        placeholder="Property name"
                         className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                     />
                     <input
@@ -130,6 +138,17 @@ const EditListings = () => {
                         placeholder="Category"
                         className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                     />
+                    <div className="flex flex-col">
+                        <label htmlFor="imageUrls" className="text-gray-700 mb-2">Image URLs (comma separated)</label>
+                        <input
+                            type="text"
+                            name="imageUrls"
+                            value={editingListing.imageUrls}
+                            onChange={handleInputChange}
+                            placeholder="Image URLs"
+                            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                    </div>
                     <div className="flex space-x-4">
                         <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-200">Update Listing</button>
                         <button type="button" onClick={() => setEditingListing(null)} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition duration-200">Cancel</button>

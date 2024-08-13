@@ -17,22 +17,21 @@ const SignIn = () => {
       const response = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyDS7IypqB-LTY2wLgxuZRdJGnXFye81kPw', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json',    //we are telling we send data in json format
         },
-        body: JSON.stringify({
+        body: JSON.stringify({        //convert js object into into json string
           email,
           password,
           returnSecureToken: true,
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json();    //converts the JSON string received from the server into a JavaScript object
 
       if (!response.ok) {
         throw new Error(data.error.message);
       }
 
-      // Store token or redirect
       console.log('Signed in:', data);
        localStorage.setItem('authToken',data.idToken);
        history.push('/admin')
